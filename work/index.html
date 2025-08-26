@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<script src="/scripts/main.js"></script>
+<script src="/scripts/pdf.js"></script>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mero Elmarassy - Research</title>
+  <script>loadCSS()</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body>
+  <div class="particles" id="particles"></div>
+  <header></header>
+
+  <main>
+    <div class="container">
+      <div class="page-header">
+        <h1>Recent Work Experience</h1>
+        <p>Over the last few years I have worked at several jobs and gained valuable experience in physics, statistics,
+          programming, and more. Here are some of my main roles:</p>
+      </div>
+
+      <div class="card-grid">
+        <div class="card full-width">
+          <div class="card-grid">
+
+            <div class="card-text full-width" id="summer2025">
+              <h3>Matter-antimatter differences in rare B decays</h3>
+              <h4>CERN, Meyrin, Switzerland</h4>
+              <h4>Summer 2025</h4>
+              <p></p>
+              <p>This summer I worked on a research project for the LHCb experiment at CERN. LHCb analyzes rare decays
+                of heavy particles to search for evidence of new physics. </p>
+              <p>I worked on the rare B decay \( \boldsymbol{B^0_s \to \phi \mu^+ \mu^-} \), which currently
+                has
+                around 4000 observed events. I did a time dependent tagged angular analysis, where we estimate the
+                values of physical parameters that determine the time/angular distribution of the B decays.</p>
+              <p>The analysis is called <i>tagged</i> because decay events are tagged either \(B\) or \(\bar{B}\)
+                depending on whether they are a B particle or an anti B particle (\(\bar{B}\)). It is <i>time
+                  dependent</i> because we fit the decay time as part of the analysis due to the extra information it
+                can give us. Angular analyses like these are common in high energy physics for studying particle decays,
+                because they allow physicists to probe the structure of subatomic particles.</p>
+              <p>Our goal was to perform a sensitivity study, in which we predict how well we can expect to measure
+                certain parameters based on predicted data yields in upcoming LHC runs. This involves generating
+                pseudodata
+                according to either the theoretical predictions or alternative physics scenarios. We then use maximum
+                likelihood estimation to fit our model back to the generated data, and look at the variance in fit
+                values. As the dataset sizes increase, the fit is able to more accurately determine the parameter values
+                and the uncertainty decreases.</p>
+
+              <div class="card-grid full-width">
+                <div class="card full-width">
+                  <div class="card-image">
+                    <img src="/pictures/work/example-plot.png">
+                  </div>
+                  <div class="card-text">
+                    <p>Example fit projections: 5-D fit to three angles, time, and mass. Includes signal and background
+                      components, detector time resolution, and acceptance.</p>
+                  </div>
+                </div>
+
+              </div>
+              <p></p>
+              <p>The fit projections above show each component of the analysis. First, pseudodata is generated according
+                to the theoretical distribution (black data points). </p>
+
+              <p>A maximum likelihood fit is then performed, which
+                simultaneously fits the signal and background components of the \(B\) and \(\bar{B}\) distributions. The
+                background distributions are shown here in orange, and are included since some events are incorrectly
+                identified as signal. The \(B\) and \(\bar{B}\) distributions are shown in blue and red, and they are
+                almost identical for all dimensions except time, where they have the opposite phase. This is why it is
+                important to do a tagged time dependent analysis since it allows us to extract more information about
+                the parameters that control this phase difference.</p>
+              <p>This process of generating and fitting data is repeated thousands of times to obtain good estimates of
+                the fit uncertainties. These give us senstivitity estimates for each parameter, which can be used to
+                constrain new physics scenarios. It also helps to confirm that the fits are not biased, as shown below.
+              </p>
+              <div class="card-grid full-width">
+                <div class="card full-width">
+                  <div class="card-image">
+                    <img src="/pictures/work/example-pulls.png">
+                  </div>
+                  <div class="card-text">
+                    <p>Example pull summary: Shows the mean and standard deviation of parameter pulls for 1000 fits. The
+                      pull is defined as \(\frac{\mu_{fit}-\mu_{true}}{\sigma_{fit}}\)</p>
+                  </div>
+                </div>
+              </div>
+              <p></p>
+              <p>As seen in the pull plot above, the means of the fit parameter pulls are all zero (within uncertainty).
+                This indicates that the fits do not bias any parameter values, which can happen if the statistics are
+                too low or parameters are too correlated. </p>
+              <p>Additionally, the standard deviations are all roughly one. This indicates that the uncertainty
+                estimates from the fit are accurate, and we don't have under/over coverage. </p>
+
+              <p>The pull plot above summarizes 1000 fits, but it is only one case of our analysis. We performed an
+                analysis of three different phase space regions, three different integrated luminosities (data yield
+                scenarios), three different tagging cases, and two different physics scenarios. We did all combinations
+                of these, which ended up being 54 time dependent configurations. We also had 18 time independent
+                configurations, for a total of 72 runs and 72,000 fits!</p>
+              <p>My original implementation of the analysis was done in the RooFit library, a popular fitting framework
+                that is part of CERN's <a href="https://root.cern.ch/" target="_blank">ROOT</a> software. It took
+                roughly 20 seconds per fit on my computer, which would have taken weeks to run locally or days on a
+                computing cluster. Since I had the whole summer to work on this, I rewrote the code in <a
+                  href="https://docs.jax.dev/en/latest/index.html" target="_blank">JAX</a>, a Python library that does
+                JIT compilation for speeding up repetitive computations. It worked well, and the new fits ran in under
+                0.5 seconds on my computer. This meant I was able to do the analysis on my computer in a day!</p>
+              <p>However, towards the end of the project I decided to begin work on my own fitting library, since I
+                thought of several additional optimizations that would speed up the fitting even more. The main idea is
+                that each fit is fully
+                independent of the others, so they can be easily parallelized to run on the GPU, potentially with
+                hundreds at a time.</p>
+              <p>There are also other optimizations that greatly improve the speed, including a new pseudodata
+                generation method, automatic differentiation for gradients, a different fitting algorithm, and
+                streamlining all of the components to work
+                together with minimal overhead. So far I have implemented a working fitter on the CPU that is over
+                100 times faster than my JAX implementation, and it is currently capable of running the full analysis
+                from this summer in about 20 minutes. I am now working on extending it to run hundreds of fits in
+                parallel on the GPU (instead of one at a time on the CPU), and it will hopefully be even faster than it
+                is now.
+              </p>
+              <p>Our work from this summer is complete, and we have a paper coming out this fall with our results.</p>
+            </div>
+          </div>
+
+        </div>
+        <div class="card full-width" id="lambda-B">
+
+          <h3>\( \boldsymbol{\Lambda_b} \) decays at the Future Circular Collider (FCC)</h3>
+          <h4>MIT, Cambridge, MA</h4>
+          <p></p>
+          <div class="card-content">
+            <div class="card-image">
+              <img src="/pictures/work/penguin.png">
+            </div>
+            <div class="card-image">
+              <img src="/pictures/work/penguin.JPG">
+            </div>
+            <div class="card-text">
+              <p>In high energy physics, electroweak <a
+                  href="https://cds.cern.ch/record/2126015/files/LHCb-PROC-2016-006.pdf" target="_blank">penguin
+                  decays</a>
+                are often studied due to their importance in understanding charge-parity violation (CPV). They are
+                called penguin decays because the loop of their Feynman diagrams resembles a penguin :) (image from <a
+                  href="https://en.wikipedia.org/wiki/Penguin_diagram" target="_blank">Wikipedia</a>)</p>
+              <p>For my project, I worked on reconstruction and angular analysis of the rare penguin decay \(
+                \boldsymbol{\Lambda_b
+                \to \Lambda \mu^+ \mu^-} \) at the Future Circular Collider (FCC). The FCC is a planned 100km long
+                particle collider to be built at CERN to replace the LHC. It will likely start collecting data around
+                2050, and the first part of the experiment will be called the FCC-ee, which will be an electron-positron
+                collider.
+              </p>
+
+              <p>The reason for studying our penguin decay at the FCC is to determine how much of an improvement we can
+                expect the FCC-ee to provide. Currently this decay is studied in the LHC through proton collisions,
+                which yield unpolarized \(\boldsymbol{\Lambda_b}\) particles and a messy background of other products
+                that dilute the signal. The FCC-ee is expected to provide a cleaner environment with much less
+                background, and more importantly, it will produce \(\boldsymbol{\Lambda_b}\) particles through a
+                different mechanism (electroweak decays) that causes them to be polarized.</p>
+              <p>The polarization is important in the study of the decay because it allows us to measure additional
+                parameters that are otherwise inaccessible. The unpolarized decays are described by 10 parameters, but
+                adding polarization gives us access to an additional 24. This allows us to further constrain new physics
+                theories and gain more information about potential violations of current physics models.</p>
+            </div>
+          </div>
+          <p></p>
+          <p>My work for this project began with making a reconstruction method for the FCC-ee detectors. Using Monte
+            Carlo simulations, we had data files representing the tracks of decay products through the detectors. These
+            included information about the charge and momentum of the particles, the positions where they cross through
+            the detector, their energies, etc. Using this information, we came up with selection criteria that would
+            filter out more signal events (\(
+            \boldsymbol{\Lambda_b
+            \to \Lambda \mu^+ \mu^-} \)), while excluding as many other kinds of decays as possible. We developed an
+            algorithm that took advantage of some unique geometry properties of our decay that were not shared by other
+            common decays at this energy, which allowed us to exclude most of the background in our selection.</p>
+          <p>The next step was performing an angular analysis. I did maximum likelihood fits to our recontructed decays,
+            similar to what I did above at CERN. We also needed to consider things like the detector acceptance, since
+            different regions of phase space are accepted with different probabilities depending on the detector
+            geometry and reconstruction algorithm.</p>
+          <p>I learned a lot about physics analysis and statistics in general while working on the project, and it was a
+            very enjoyable experience overall! I got to present our work at the 2025 American Physical Society
+            Conference, which was an exciting opportunity.</p>
+          <p>We are publishing a paper this fall with our results.</p>
+        </div>
+
+      </div>
+    </div>
+  </main>
+  <footer></footer>
+</body>
+
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<script src="/scripts/main.js"></script>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mero Elmarassy - Projects</title>
+  <script>loadCSS()</script>
+</head>
+
+
+<body>
+  <div class="particles" id="particles"></div>
+
+  <body>
+    <header></header>
+  </body>
+
+  <main>
+    <div class="container">
+      <div class="page-header">
+        <h1>Projects</h1>
+        <p>I enjoy learning and practicing new skills by developing software projects. Here are some of my most recent
+          works</p>
+      </div>
+
+      <div class="card-grid full-width">
+        <div class="card full-width" id="fastfit">
+          <div class="card-grid full-width">
+            <div class="card-text full-width">
+              <h3>FastFit</h3>
+              <h4>A fast maximum likelihood estimation library for physics analyses <a
+                  href="https://github.com/elmarassy/fit">[Github]</a></h4>
+
+              <p></p>
+
+              <p>
+                Maximum likelihood estimation is a technique used to estimate the parameters of a probability
+                distribution using a data sample. It is often used in physics to obtain the values and uncertainties of
+                physical parameters from experimental data.
+              </p>
+              <p>
+                It works by maximizing the likelihood function, which is the product of the probabilities of all the
+                data points. To avoid numerical precision issues from multiplying thousands of small numbers, the
+                logarithm of the likelihood is used instead. Most optimization algorithms are designed to minimize a
+                cost function, which we take to be the negative log likelihood. This is equivalent to maximizing the
+                likelihood. Minimization is done using iterative methods, such as gradient descent, Newton’s method, or
+                quasi-Newton methods. They offer different advantages and use cases, which will be discussed later.
+              </p>
+              <p>
+                There are currently many good frameworks for maximum likelihood estimation in physics, including the
+                libraries <a href="https://root.cern/manual/roofit/">Roofit</a> and <a
+                  href="https://zfit.github.io/poster/index.html">Zfit</a>. They allow users to define a custom
+                distribution, provide or generate data,
+                and perform fits. Both of these libraries use a fitting backend called <a
+                  href="https://en.wikipedia.org/wiki/MINUIT">Minuit</a>, which provides the Migrad
+                minimization algorithm. Migrad is a very robust fitting algorithm that often succeeds at finding a
+                minimum where many other algorithms are unable to. It is a second order quasi-Newton algorithm, which
+                means that it uses second order information about the function (curvature), without explicitly computing
+                the full Hessian (which would make it Newtonian). This allows it to converge in far fewer iterations
+                compared to a first order algorithm like gradient descent, while also being better able to handle
+                scaling issues in which one parameter is orders of magnitude larger.
+              </p>
+              <p>
+                Although Migrad is highly reliable and widely used, there are some areas where it is not very efficient.
+                For example, one common step in physics analyses is running toy studies, in which pseudodata is
+                repeatedly generated and fit to thousands of times for the same model. When each fit takes ~10 seconds,
+                this can take days to run.
+              </p>
+              <p>
+                This summer I worked on an analysis at the LHCb experiment at CERN, where we needed to run 72,000 fits.
+                My original implementation of the analysis in Roofit took about 15 seconds per fit, which would have
+                taken about two weeks to run on my laptop, or a few days on a computing cluster. I decided to try to
+                speed up the fitting by improving the cost function evaluation, which was the most expensive part. I
+                used a python library called JAX, which does just in time compilation to speed up function evaluations
+                and compute gradients using automatic differentiation. The backend minimizer was still Migrad, but the
+                fit times were now around 0.5 seconds rather than 15. I was able to run the code in a day, which ended
+                up being very helpful because we were able to easily make changes later (we had to rerun it five times
+                in total, which would have taken 10 weeks in Roofit!).
+                The main advantage of JAX was that it provided a fast, exact gradient using automatic differentiation.
+                This meant that each iteration of the minimizer was faster and more precise, but it did not change the
+                number of iterations needed. The number of iterations could be far smaller using a true second order
+                method like Newton’s method, but Migrad is unable to do that because it is designed to be a general,
+                standalone backend for minimization that does not have access to the Hessian matrix of the cost
+                function. However, a full maximum likelihood estimation library that handles all parts of the process
+                (defining + fitting a model) could use automatic differentiation to compute the exact Hessian, making it
+                easy to use Newton’s method. This gives improved precision and far fewer iterations compared to
+                quasi-Newton methods like Migrad, at the expense of needing to compute the Hessian matrix. However,
+                nearly all physics analyses use fewer than ~100 parameters, for which the Hessian is relatively cheap
+                and Newton’s method is much faster.
+              </p>
+              <p>
+                Therefore, the first main idea of the new fitting library is to develop a fully self contained framework
+                that allows us to take advantage of faster algorithms that would otherwise be impossible to use. I have
+                already begun to implement this idea towards the end of my summer job, and I currently have a working
+                fitter that runs on the CPU with automatic differentiation and a Newton’s method optimizer. I have
+                tested it on several examples with promising results, and it is able to run this summer’s analysis in
+                about 15 minutes (while the JAX implementation took roughly 15 hours).
+              </p>
+
+              <p>This speedup was mainly due to using Newton's method, which was almost always able to converge in under
+                ~10 iterations while Migrad took around ~1200. However, another main area of improvement was in data
+                generation. In most physics analyses, pseudodata is generated using an accept-reject method (<a
+                  href="https://en.wikipedia.org/wiki/Rejection_sampling">rejection sampling</a>) where the starting
+                distribution is uniform in all dimensions.
+
+                Samples are then selected to match the shape of the target distribution, allowing users to generate data
+                for arbitrary models. However,
+                this is highly inefficient in cases where the target distribution has sharp peaks, because it requires
+                generating thousands of uniform starting points for each acccepted sample point. For some distributions
+                (especially exponentials or Gaussians common in mass fits), there can be upwards of 1000 rejected points
+                for each accepted one. I optimized this step by allowing users to specify a rough shape of each
+                dimension of their dataset. The library then uses these shapes rather than a uniform distribution, and
+                results in far better acceptance rates (for my summer analysis, the acceptance rate was ~1/3 compared to
+                ~1/1000 before this). This provided a noticable speedup in data generation, but there are still
+                optimizations to be made. I am currently working on having the library automatically determine good
+                shapes for the starting distributions to make this process as easy as possible for users.
+              </p>
+              <p>
+                However, there are still many improvements to be made. Most importantly, the code can be parallelized to
+                run on the GPU. Since each fit is completely independent of the others, it is possible to run tens or
+                hundreds at a time. Implementing this will be the main part of the project, and it may result in a
+                further 10-100x speed up compared to the current CPU implementation.
+              </p>
+              <p>
+                My goal for this fall is to implement all of these improvements, as well as to streamline the process of
+                defining and fitting a model. I would like the library to be simple to use, so I will work on making a
+                nice interface and providing Python bindings so that more people can access it (It is written in Rust, a
+                lower level language, for performance reasons. I plan to provide high level bindings and package it as a
+                Python library so that more people are able to use it). I am working on this for the MIT LHCb group, but
+                if successful it would be useful in many other physics experiments.
+              </p>
+              <p>
+                I am especially interested in this project because it emerged organically from my work this summer.
+                Waiting for the fits was super annoying, so working on a project that directly addresses this problem
+                that I and many other people have experienced is very exciting.
+              </p>
+            </div>
+
+          </div>
+
+
+        </div>
+
+
+      </div>
+
+
+  </main>
+
+  <footer></footer>
+</body>
+
+</html>
